@@ -1,18 +1,9 @@
 const qrcode = require('qrcode-terminal');
-// const express = require('express');
-// const app = express();
+const express = require('express');
+const app = express();
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const { appendFile } = require('fs');
-// const port = 80;
-
-// app.get('/', (req, res)=>{
-//   res.send('haii');
-// });
-
-// app.listen(port, ()=>{
-//   console.log(`Server berjalan pada http://localhost:${port}`)
-// })
-
+const port = 80;
 
 const client = new Client({
     authStrategy: new LocalAuth()
@@ -34,9 +25,34 @@ client.on('auth_failure', message => {
 
 client.on('ready', () => {
   console.log('Client is ready!');
-  var numberuser= `6285155489797`
-  var textuser = 'hai-tayooo' 
-  chatuser( numberuser, textuser);
+  app.listen(port, ()=>{
+    console.log(`Server berjalan pada http://localhost:${port}`)
+  })
+
+  app.get('/send/:phone', function (req, res) {
+    if (req.query.text == null || req.query.text == '') {
+      return res.send('param text required')
+    }
+    if (typeof parseInt(req.params.phone)  != 'number') {
+      return res.send('phone number must be integer')
+    }
+    var textuser = req.query.text;
+    var numberuser= req.params.phone; 
+    chatuser( numberuser, textuser);
+    res.send(`sending text to ${numberuser} with text = ${textuser}`)
+ });
+  app.get('/', (req, res)=>{
+    res.send('haii');
+  });
+  app.get('/test-send', (req, res)=>{
+    var numberuser= `6285155489797`
+    var textuser = 'hai-tayooo' 
+    chatuser( numberuser, textuser);
+    res.send(`sending text to ${numberuser} with text = ${textuser}`)
+  });
+  
+
+  
 });
 
 client.initialize();
@@ -68,23 +84,19 @@ function chatuser(numberuser, textuser) {
   
   const chatId = numberuser + "@c.us";
   client.sendMessage(chatId, textuser);
-    console.log('sendmessage'+chatId);
+    console.log(`sending text to ${chatId} with text = ${textuser}`);
 }
 
-// let text = "tes"
-
-
-  
-  // function broadcast(text) {
-  //   client.on('ready', () => {
-  //       const message = text;
-  //       sendToChats(message);
-  //     });
-  //   async function sendToChats(m){
-  //       const mychats = await client.getChats();
-  //       for(chat of mychats){
-  //         chat.sendMessage(m);
-  //       }
-  //     }
-  // }
+  function broadcast(text) {
+    client.on('ready', () => {
+        const message = text;
+        sendToChats(message);
+      });
+    async function sendToChats(m){
+        const mychats = await client.getChats();
+        for(chat of mychats){
+          chat.sendMessage(m);
+        }
+      }
+  }
   
