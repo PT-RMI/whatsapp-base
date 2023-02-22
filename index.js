@@ -3,8 +3,8 @@ const express = require('express');
 const app = express();
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const { appendFile } = require('fs');
-const port = 80;
-
+const port = 100;
+const crypt = 'XjhGkWLRp5sqivC0yaT6';
 const client = new Client({
     authStrategy: new LocalAuth()
 }); 
@@ -29,7 +29,10 @@ client.on('ready', () => {
     console.log(`Server berjalan pada http://localhost:${port}`)
   })
 
-  app.get('/send/:phone', function (req, res) {
+  app.get('/send/:encrypt/:phone', function (req, res) {
+    if(req.params.encrypt != crypt){
+      return res.send('KEY DATA tidak ada')
+    }
     if (req.query.text == null || req.query.text == '') {
       return res.send('param text required')
     }
@@ -37,8 +40,13 @@ client.on('ready', () => {
       return res.send('phone number must be integer')
     }
     var textuser = req.query.text;
-    var numberuser= req.params.phone; 
-    chatuser( numberuser, textuser);
+    var numberuser= req.params.phone;
+
+    if((''+numberuser)[0] == 6 && (''+numberuser)[1] ==2){
+      chatuser( numberuser, textuser);
+    }else{
+      chatgroup( numberuser, textuser);
+    }
     res.send(`sending text to ${numberuser} with text = ${textuser}`)
  });
   app.get('/', (req, res)=>{
@@ -49,6 +57,12 @@ client.on('ready', () => {
     var textuser = 'hai-tayooo' 
     chatuser( numberuser, textuser);
     res.send(`sending text to ${numberuser} with text = ${textuser}`)
+  });
+  app.get('/test-group', (req, res)=>{
+    var groupnumber= `120363037341519775`
+    var textuser = 'hai-tayooo\n apakabar ente' 
+    chatgroup( groupnumber, textuser);
+    res.send(`sending text to ${groupnumber} with text = ${textuser}`)
   });
   
 
@@ -83,6 +97,12 @@ client.on('message', message => {
 function chatuser(numberuser, textuser) {
   
   const chatId = numberuser + "@c.us";
+  client.sendMessage(chatId, textuser);
+    console.log(`sending text to ${chatId} with text = ${textuser}`);
+}
+function chatgroup(groupnumber, textuser) {
+  
+  const chatId = groupnumber + "@g.us";
   client.sendMessage(chatId, textuser);
     console.log(`sending text to ${chatId} with text = ${textuser}`);
 }
