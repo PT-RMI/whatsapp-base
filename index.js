@@ -107,16 +107,16 @@ function chatgroup(groupnumber, textuser) {
     console.log(`sending text to ${chatId} with text = ${textuser}`);
 }
 
-  function broadcast(text) {
-    client.on('ready', () => {
-        const message = text;
-        sendToChats(message);
-      });
-    async function sendToChats(m){
-        const mychats = await client.getChats();
-        for(chat of mychats){
-          chat.sendMessage(m);
-        }
+function broadcast(text) {
+  client.on('ready', () => {
+      const message = text;
+      sendToChats(message);
+    });
+  async function sendToChats(m){
+      const mychats = await client.getChats();
+      for(chat of mychats){
+        chat.sendMessage(m);
       }
-  }
+    }
+}
   
