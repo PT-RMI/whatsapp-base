@@ -1,11 +1,18 @@
-const qrcode = require('qrcode');
+const qrcode = require('qrcode-terminal');
 const express = require('express');
+const fileUpload = require('express-fileupload')
 const app = express();
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const { appendFile } = require('fs');
-const port = 100;
+const path = require('path');
+const { log, error } = require('console');
+const { abort } = require('process');
+const port = 1111;
 const crypt = 'XjhGkWLRp5sqivC0yaT6';
 const client = new Client({
+        puppeteer: {
+                args: ['--no-sandbox'],
+        },
     authStrategy: new LocalAuth()
 }); 
 // const client = new Client();
@@ -28,6 +35,7 @@ client.on('ready', () => {
   app.listen(port, ()=>{
     console.log(`Server berjalan pada http://localhost:${port}`)
   })
+  app.use(fileUpload())
 
   app.get('/send/:encrypt/:phone', function (req, res) {
     if(req.params.encrypt != crypt){
@@ -49,6 +57,41 @@ client.on('ready', () => {
     }
     res.send(`sending text to ${numberuser} with text = ${textuser}`)
  });
+
+ app.post('/send-with-file/:encrypt/:phone', function (req, res) {
+  if(req.params.encrypt != crypt){
+    return res.send('KEY DATA tidak ada')
+  }
+  if (typeof parseInt(req.params.phone)  != 'number') {
+    return res.send('phone number must be integer')
+  }
+  var textuser = req.body.text;
+  var numberuser= req.params.phone;
+
+  if((''+numberuser)[0] == 6 && (''+numberuser)[1] ==2){
+    if (Object.keys(req.body).length ===2) {
+      console.log('test with url_image');
+      const file = req.body.file_url;
+      console.log(file);
+      sendFileLink(req.body.file_url, numberuser, textuser)
+
+    }else if(Object.keys(req.files).length ===1){
+      console.log("test with send file");
+      const file = req.files.upload
+      const filePath = path.join(__dirname, 'public', 'files', `${file.name}`)
+      res.status(200).json({status : 'sukses', pathfile: filePath})
+      file.mv(filePath, err => {
+          if (err) return res.status(500).send(err)
+      })
+      sendFilemsg(filePath, numberuser, textuser)
+    }else{
+      return error('error')
+    }
+  }else{
+    res.send(`fitur belum tersedia untuk group`)
+  }
+
+});
   app.get('/', (req, res)=>{
     res.send('haii');
   });
@@ -64,6 +107,29 @@ client.on('ready', () => {
     chatgroup( groupnumber, textuser);
     res.send(`sending text to ${groupnumber} with text = ${textuser}`)
   });
+  app.post('/test-send-file', (req, res)=>{
+    var numberuser= `6285155489797`;
+
+    if (Object.keys(req.body).length ===1) {
+      console.log('test with url_image');
+      const file = req.body.file_url;
+      console.log(file);
+      sendFileLink(req.body.file_url, numberuser, 'haii')
+
+    }else if(Object.keys(req.files).length ===1){
+      console.log("test with send file");
+      const file = req.files.upload
+      const filePath = path.join(__dirname, 'public', 'files', `${file.name}`)
+      res.status(200).json({status : 'sukses', pathfile: filePath})
+      file.mv(filePath, err => {
+          if (err) return res.status(500).send(err)
+      })
+      sendFilemsg(filePath, numberuser)
+    }else{
+      return error('error')
+    }
+  });
+  
   
 
   
@@ -72,12 +138,13 @@ client.on('ready', () => {
 client.initialize();
 
 client.on('message', message => {
-	console.log(message.from+' -  '+ message.body);
+  const contact = message.getContact();
+        console.log(`${message.from} (${contact.number}) -  ${message.body} `);
 });
 client.on('message', message => {
-	if(message.body === '!ping') {
-		message.reply('pong');
-	}else if (message.body.startsWith('!sendto ')) {
+        if(message.body === '!ping') {
+                message.reply('pong');
+        }else if (message.body.startsWith('!sendto ')) {
     // Direct send a new message to specific id
     let number = message.body.split(' ')[1];
     let messageIndex = message.body.indexOf(number) + number.length;
@@ -119,4 +186,17 @@ function broadcast(text) {
       }
     }
 }
+
+ function sendFilemsg(file_path,numberuser,msg){
+  const media = MessageMedia.fromFilePath(file_path);
+  console.log(media);
+  console.log(client.sendMessage(`${numberuser}@c.us`, media, {caption: msg}) );
+  console.log(`chat with photo has been send to ${numberuser} with cation = ${msg}`);
+  }
+
+  async function sendFileLink(url,numberuser,msg){
+    const media = await MessageMedia.fromUrl(`${url}`);
+    console.log(client.sendMessage(`${numberuser}@c.us`, media, {caption: msg}) );
+    console.log(`chat with photo has been send to ${numberuser} with cation = ${msg}`);
+    }
   
