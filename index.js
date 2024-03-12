@@ -2,13 +2,14 @@ const qrcode = require('qrcode-terminal');
 const express = require('express');
 const fileUpload = require('express-fileupload')
 const app = express();
+require("dotenv").config();
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const { appendFile } = require('fs');
 const path = require('path');
 const { log, error } = require('console');
 const { abort } = require('process');
-const port = 1111;
-const crypt = 'XjhGkWLRp5sqivC0yaT6';
+const port = process.env.PORT ? process.env.PORT: 1000;
+const crypt = process.env.TOKEN_API;
 const client = new Client({
         puppeteer: {
                 args: ['--no-sandbox'],
@@ -37,17 +38,17 @@ client.on('ready', () => {
   })
   app.use(fileUpload())
 
-  app.get('/send/:encrypt/:phone', function (req, res) {
+  app.post('/send/:encrypt/:phone', function (req, res) {
     if(req.params.encrypt != crypt){
       return res.send('KEY DATA tidak ada')
     }
-    if (req.query.text == null || req.query.text == '') {
+    if (req.body.text == null || req.body.text == '') {
       return res.send('param text required')
     }
     if (typeof parseInt(req.params.phone)  != 'number') {
       return res.send('phone number must be integer')
     }
-    var textuser = req.query.text;
+    var textuser = req.body.text;
     var numberuser= req.params.phone;
 
     if((''+numberuser)[0] == 6 && (''+numberuser)[1] ==2){
